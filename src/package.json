@@ -1,0 +1,12 @@
+{
+  "name": "echo-service",
+  "version": "0.0.1",
+  "scripts": {
+    "start": "http-echo-server 8080"
+  },
+  "dependencies": {
+    "dayjs": "^1.11.3",
+    "ip": "^1.1.8",
+    "sqlite3": "^5.0.8"
+  }
+}

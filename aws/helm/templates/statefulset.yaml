@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Values.fruit }}
+  labels:
+    role: {{ .Values.fruit }}
+    env: {{ .Values.fruit }}
+spec:
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      role: {{ .Values.fruit }}
+      env: {{ .Values.fruit }}
+  serviceName: {{ .Values.fruit }}
+{{- if .Values.replicas }}
+  replicas: {{ .Values.replicas }}
+{{- end }}
+  template:
+    metadata:
+      annotations:
+        iam.amazonaws.com/role: {{ .Values.iam_role }}
+      labels:
+        role: {{ .Values.fruit }}
+        env: {{ .Values.fruit }}
+    spec:
+      containers:
+      - name: {{ .Values.fruit }}
+        image: "{{ .Values.image.repository }}/{{ .Values.fruit }}:{{ .Values.image.version }}"
+        imagePullPolicy: {{ .Values.image.imagePullPolicy }}
+        env:
+        - name: DB_PATH
+          value: "/opt/{{ .Values.fruit }}/db"
+{{- if .Values.http_liveliness }}
+        livenessProbe:
+          failureThreshold: {{ .Values.http_liveliness.failure }}
+          httpGet:
+            path: {{ .Values.http_liveliness.path }}
+            port: {{ .Values.http_liveliness.port }}
+            scheme: HTTP
+          initialDelaySeconds: {{ .Values.http_liveliness.delay }}
+          periodSeconds: {{ .Values.http_liveliness.period }}
+          successThreshold: {{ .Values.http_liveliness.success }}
+          timeoutSeconds: {{ .Values.http_liveliness.timeout }}
+{{- end }}
+
+{{- if .Values.http_readiness }}
+        livenessProbe:
+          failureThreshold: {{ .Values.http_readiness.failure }}
+          httpGet:
+            path: {{ .Values.http_readiness.path }}
+            port: {{ .Values.http_readiness.port }}
+            scheme: HTTP
+          initialDelaySeconds: {{ .Values.http_readiness.delay }}
+          periodSeconds: {{ .Values.http_readiness.period }}
+          successThreshold: {{ .Values.http_readiness.success }}
+          timeoutSeconds: {{ .Values.http_readiness.timeout }}
+{{- end }}
+
+        resources:
+{{ toYaml .Values.resources | trim | indent 10 }}
+        ports:
+{{ toYaml .Values.container_ports | trim | indent 10 }}
+
+        volumeMounts:
+        - mountPath: "/opt/{{ .Values.fruit }}/db"
+          name: "{{ .Values.fruit }}-vol"
+      restartPolicy: Always
+  volumeClaimTemplates:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: "{{ .Values.fruit }}-vol"
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
+      storageClassName: {{ .Values.storage_class_name }}
+      volumeMode: Filesystem

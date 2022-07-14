@@ -1,0 +1,27 @@
+{{- if .Values.ingress_enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.fruit }}-ingress
+  labels:
+    role: {{ .Values.fruit }}
+    env: {{ .Values.fruit }}
+  annotations:
+{{ toYaml .Values.ingress_annotations | trim | indent 4 }}
+spec:
+  rules:
+{{- range .Values.ingress_sites }}
+  - host: {{ .host }}
+    http:
+      paths:
+{{- range .paths }}
+      - path: {{ .path }}
+        pathType: {{ .path_type }}
+        backend:
+          service:
+            name: {{ .service_name }}
+            port:
+              number: {{ .service_port }}
+{{- end }}
+{{- end }}
+{{- end }}

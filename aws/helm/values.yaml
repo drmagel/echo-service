@@ -1,0 +1,90 @@
+########## Feature Flags - Enables/ disables parts of the deployment ###########
+aws_access_checker: True
+password_from_secret: True
+hpa_enabled: True
+ingress_enabled: True
+node_port_enabled: True
+############## General Configuration - Shared between all Pod's ###############
+
+fruit: echo-service
+
+iam_role: "echo-service-serverrole"
+
+image:
+  repository: 515321278346.dkr.ecr.us-east-1.amazonaws.com
+  image_pull_policy: IfNotPresent
+  version: latest
+
+update_strategy: RollingUpdate
+
+replicas: 2
+
+###### Health Check settings ######
+http_liveliness:
+  path: /health
+  port: 8080
+  delay: 60
+  period: 10
+  timeout: 7
+  success: 1
+  failure: 3
+
+http_readiness:
+  path: /health
+  port: 8080
+  delay: 60
+  period: 10
+  timeout: 7
+  success: 1
+  failure: 3
+
+########################### Helm Deployment Values ############################
+
+####### AutoScaling ( HPA ) Configuration ######
+
+resources:
+  limits:
+    cpu: 0.1
+    memory: 50Mi
+  requests:
+    cpu: 0.05
+    memory: 25Mi
+
+
+container_ports:
+  - containerPort: 8080
+    name: http
+    protocol: TCP
+
+
+node_ports:
+  - name: http
+    protocol: TCP
+    port: 8080
+    targetPort: http
+
+### Ingress ###
+ingress_sites:
+  - host: echo-service.orcandies.click
+    paths:
+    - path: /
+      path_type: Prefix
+      service_name: echo-service-node-port
+      service_port: 8080
+
+
+ingress_annotations:
+  kubernetes.io/ingress.class: "alb"
+  alb.ingress.kubernetes.io/target-type: "instance"
+  alb.ingress.kubernetes.io/backend-protocol: HTTP
+  alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+  alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80, "HTTPS": 443}]'
+  external-dns.alpha.kubernetes.io/hostname: echo-service.orcandies.click
+  alb.ingress.kubernetes.io/scheme: internet-facing
+  alb.ingress.kubernetes.io/manage-backend-security-group-rules: "true"
+  alb.ingress.kubernetes.io/tags: "Name=echo-service"
+  alb.ingress.kubernetes.io/security-groups: sg-0bf06058c2249f869
+  alb.ingress.kubernetes.io/subnets: subnet-0904ae8ad4505e630,subnet-04a4efb2b18fba388,subnet-09f6207ded16b4dc6,subnet-038017bc52fe6cd96,subnet-0fc7df18928dd5d99,subnet-0d08c12228cfd936b
+
+ ### PVC
+storage_class_name: "gp3"

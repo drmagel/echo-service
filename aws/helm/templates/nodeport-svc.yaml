@@ -1,0 +1,22 @@
+{{- if .Values.node_port_enabled }}
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.fruit }}-node-port
+  labels:
+    role: {{ .Values.fruit }}
+    env: {{ .Values.fruit }}
+  annotations:
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: "120"
+    alb.ingress.kubernetes.io/healthcheck-path: /v1/api/healthcheck/alive
+    alb.ingress.kubernetes.io/target-type: instance
+spec:
+  type: NodePort
+  ports:
+{{ toYaml .Values.node_ports | trim | indent 2 }}
+  selector:
+    role: {{ .Values.fruit }}
+    env: {{ .Values.fruit }}
+
+{{- end }}
